@@ -65,10 +65,11 @@ const CellDot = styled.div`
   :active {
     background-color: ${props => props.placable ? (props.playerTurn === 1 ? "#378F7E" : "#9A2E22") : null};
   }
-  animation-name: ${props => props.isWinningPiece || props.lastPlaced ? blinkingEffect : null};
+  animation-name: ${props => props.isWinningPiece ? blinkingEffect : null};
   animation-duration: 1s;
   animation-iteration-count: infinite;
   animation-timing-function: linear;
+  animation-name: ${props => props.lastPlaced ? blinkingEffect1 : null}
 `;
 
 const blinkingEffect = () => {
@@ -76,7 +77,14 @@ const blinkingEffect = () => {
   50% {
     border-color: white; 
   }`;
-}
+};
+
+const blinkingEffect1 = () => {
+  return keyframes`
+  50% {
+    opacity: 70%; 
+  }`;
+};
 
 const bouncingText = () => {
   return keyframes`
@@ -113,12 +121,12 @@ const Cell = (props) => {
 
 const App = () => {
 
-  const [modalShow, setModalShow] = React.useState(false);
+  const [modalShow, setModalShow] = useState(false);
   const LoadingButtonRef = useRef(null);
-  const [humanPlayer, setHumanPlayer] = React.useState(1);
-  const [aiPlayer, setAIPlayer] = React.useState(2);
-  const [playerTurn, setPlayerTurn] = React.useState(1);
-  const [lastPlaced, setLastPlaced] = React.useState([-1,-1]);
+  const [humanPlayer, setHumanPlayer] = useState(1);
+  const [aiPlayer, setAIPlayer] = useState(2);
+  const [playerTurn, setPlayerTurn] = useState(1);
+  const [lastPlaced, setLastPlaced] = useState([-1,-1]);
 
   // 1: human, 2: ai
   const generateNewBoard = () => {
@@ -147,12 +155,12 @@ const App = () => {
 
   const placeCell = (i,j) => {
     console.log(`place cell at row: ${i}, col: ${j}`);
-    setPiece(j);
     let newCells = Array.from(cells);
     newCells[i][j] = humanPlayer;
     applyGravity(newCells, i, j);
     setCells(newCells);
     setPlayerTurn(aiPlayer);
+    setPiece(newCells,j);
   }
   
   const randomTimeout = (min,max) => {
@@ -160,15 +168,15 @@ const App = () => {
     return new Promise((resolve) => setTimeout(resolve, delay));
   }
   
-  const chooseFirstMover = (i) => {
+  const chooseFirstMover = async (i) => {
+    setCells(generateNewBoard());
+    setLastPlaced([-1,-1]);
     let promise1 = new Promise((resolve) => {
-      setLastPlaced([-1,-1]);
       setHumanPlayer(i);
       setAIPlayer(i === 1 ? 2 : 1);
       setModalShow(false);
       resolve();
     })
-    console.log('starting new game!');
     let promise = new Promise((resolve, reject) => {
       const requestOptions ={
         method: 'POST',
@@ -180,7 +188,6 @@ const App = () => {
       fetch('http://localhost:5000/createboard', requestOptions)
       .then(response => {response.json()})
       .then(() => {
-        console.log('successfully created board');
         LoadingButtonRef.current.doneLoading();
         resolve();
       }).catch((error) => {
@@ -188,7 +195,8 @@ const App = () => {
       });
     });
     Promise.all([promise, promise1]).then(() => {
-      getBoard();
+      console.log('successfully started new game!');
+      getBoard(generateNewBoard());
       setWinningLocations(generateNewBoard());
       // setModalShow(false);
       setWinner(0);
@@ -196,18 +204,15 @@ const App = () => {
     }, (error)=>{console.log(error)});
   };
 
-  const getBoard = () => {
+  const getBoard = (board) => {
     let promise = new Promise((resolve, reject) => {
       fetch('http://localhost:5000/getboard')
-      .then((response) => {
-        console.log(response);
-        return response.json()})
-      .then(async (data) => {
+      .then((response) => response.json())
+      .then((data) => {
         // await randomTimeout(100,1000);
-        setCells(data.board);
-        updateLastPlaced(data.board);
-        setPlayerTurn(data.mark);
         console.log(data);
+        setCells(data.board);
+        setPlayerTurn(data.mark);
         if (data.playing !== "playing") {
           if (data.playing === "draw"){
             setGameStarted(false);
@@ -215,6 +220,8 @@ const App = () => {
           } else {
             checkWinCondition(data.board);
           }
+        } else {
+          updateLastPlaced(board,data.board);
         }
         resolve();
       })
@@ -227,7 +234,7 @@ const App = () => {
     }, (error) => {console.log(error)});
   }
 
-  const setPiece = (col) => {
+  const setPiece = (newCells, col) => {
     let promise = new Promise((resolve, reject) => {
       const requestOptions ={
         method: 'POST',
@@ -245,8 +252,8 @@ const App = () => {
       });
     });
     promise.then(()=>{
+      getBoard(newCells);
       console.log('submitted action');
-      getBoard();
     },
     (error)=>{console.log(error);})
   }
@@ -309,12 +316,14 @@ const App = () => {
     }
   }
 
-  const updateLastPlaced = (newCells) => {
-    console.log(cells, newCells);
-    for (let i=0; i <= newCells.length; i++){
-      for (let j=0; j <= newCells.length; j++){
-        if (newCells[i][j] !== cells[i][j]){
+  const updateLastPlaced = (oldCells, newCells) => {
+    console.log(oldCells);
+    console.log(newCells);
+    for (let i=0; i < newCells.length; i++){
+      for (let j=0; j < newCells[0].length; j++){
+        if (newCells[i][j] !== oldCells[i][j]){
           setLastPlaced([i,j])
+          console.log(`AI placed at row: ${i}, col: ${j}`)
         }
       }
     }
@@ -353,7 +362,7 @@ const App = () => {
                 // placable={cell === 0 && gameStarted}
                 isWinningPiece = {winningLocations[i][j] === 1}
                 placable={playerTurn === humanPlayer && cell === 0 && gameStarted}
-                handleClick={() => placeCell(i,j)}
+                handleClick={() => {placeCell(i,j)}}
                 />
               )))
             }
