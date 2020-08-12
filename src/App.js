@@ -69,7 +69,7 @@ const CellDot = styled.div`
   animation-duration: 1s;
   animation-iteration-count: infinite;
   animation-timing-function: linear;
-  animation-name: ${props => props.lastPlaced ? blinkingEffect1 : null}
+  animation-name: ${props => props.lastPlaced ? blinkingEffect1 : null};
 `;
 
 const blinkingEffect = () => {
@@ -372,6 +372,7 @@ const App = () => {
           variant="secondary"
           label="New Game"
           loadingLabel="Loading New Game..."
+          gameStarted={gameStarted}
           ref={LoadingButtonRef}
           handleClick={() => {
             setModalShow(true)}}/>
