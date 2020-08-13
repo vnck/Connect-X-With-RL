@@ -14,7 +14,7 @@ class DeepModel(nn.Module):
         self.conv2 = nn.Conv2d(1,20,(1,7))
         self.conv3 = nn.Conv2d(1,20,(6,1))
         self.relu = nn.ReLU(inplace=True)
-        self.fc = nn.Linear(20*126,128)
+        self.fc = nn.Linear(20*55,128)
         self.output_layer = nn.Linear(128, num_actions)
 
     def forward(self, x):
@@ -23,11 +23,12 @@ class DeepModel(nn.Module):
         x1 = self.relu(self.conv1(x))
         x2 = self.relu(self.conv2(x))
         x3 = self.relu(self.conv3(x))
-        x2 = x2.expand(-1,20,6,7)
-        x3 = x3.expand(-1,20,6,7)
-        x_cat = torch.cat((x1,x2,x3),1)
-        x = x_cat.view(-1,20*126)
-        x = torch.sigmoid(self.fc(x))
+        x1 = x1.view(-1,20,42)
+        x2 = x2.view(-1,20,6)
+        x3 = x3.view(-1,20,7)
+        x_cat = torch.cat((x1,x2,x3),2)
+        x = x_cat.view(-1,20*55)
+        x = self.relu(self.fc(x))
         x = self.output_layer(x)
         return x
 
@@ -131,7 +132,7 @@ class DQN:
         torch.save(self.model.state_dict(), path)
 
     def load_weights(self, path):
-        self.model.load_state_dict(torch.load(path, map_location=torch.device('cpu')))
+        self.model.load_state_dict(torch.load(path, map_location=self.device))
 
     def preprocess(self, state):
         # each state consists of overview of the board and the mark in the obsevations
@@ -151,7 +152,7 @@ class DQN:
 
 
 model = DQN(num_actions=7)
-model.load_weights('weights/weights-deepqconv-12082339.pth')
+model.load_weights('weights-deepqconv.pth')
 
 def my_agent(observation, configuration):
   return model.get_action(observation, 0.0)
