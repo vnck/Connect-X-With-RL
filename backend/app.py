@@ -2,7 +2,7 @@ from flask import Flask,request
 from flask_cors import CORS
 import gym
 from kaggle_environments import make
-from deepqconv_model import my_agent 
+from dqn_dense_model import dense_agent 
 import numpy as np
 
 app = Flask(__name__)
@@ -42,7 +42,7 @@ def create_board():
     global observation
     global playing
     # env = ConnectX(agent_name,player)
-    env = ConnectX(my_agent, player)
+    env = ConnectX(dense_agent, player)
     observation = env.reset()
     playing = "playing"
     return 'ok',200
