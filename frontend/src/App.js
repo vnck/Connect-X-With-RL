@@ -70,7 +70,15 @@ const CellDot = styled.div`
   animation-iteration-count: infinite;
   animation-timing-function: linear;
   animation-name: ${props => props.lastPlaced ? blinkingEffect1 : null};
+  animation-name: ${props => props.illegalMove ? blinkingRedEffect : null};
 `;
+
+const blinkingRedEffect = () => {
+  return keyframes`
+  50% {
+    border-color: yellow; 
+  }`;
+};
 
 const blinkingEffect = () => {
   return keyframes`
@@ -112,6 +120,7 @@ const Cell = (props) => {
         placable={props.placable}
         lastPlaced={props.lastPlaced}
         playerTurn={props.playerTurn}
+        illegalMove={props.illegalMove}
         val={props.val}
       />
     </CellContainer>
@@ -146,6 +155,7 @@ const App = () => {
   const playerNames = ['Human', 'Dense Agent', 'Alpha0 MCTS Agent', 'Alpha0 Greedy Agent', 'Negamax Agent', 'Random Agent']
   const [playerOneName, setPlayerOneName] = useState('');
   const [playerTwoName, setPlayerTwoName] = useState('');
+  const [illegalMove, setIllegalMove] = useState(-1);
 
   const applyGravity = (cells, x, y) => {
     for (let i = cells.length - 1; i >= x; i--){
@@ -171,12 +181,21 @@ const App = () => {
     promise.then((action) => {
       console.log('got action');
       let newCells = Array.from(board);
-      newCells[0][action] = humanPlayer;
-      applyGravity(newCells, 0, action);
-      setCells(newCells);
-      updateLastPlaced(board,newCells);
-      setPlayerTurn(aiPlayer);
-      setPiece(newCells,action);
+      if (newCells[0][action] === 0){
+        newCells[0][action] = humanPlayer;
+        applyGravity(newCells, 0, action);
+        setCells(newCells);
+        updateLastPlaced(cells,newCells);
+        setPlayerTurn(aiPlayer);
+        setPiece(newCells,action);
+      } else {
+        console.log(`illegal move made at ${action}`);
+        setIllegalMove(action);
+        setLastPlaced([-1,-1]);
+        setWinningLocations(generateNewBoard());
+        setWinner(aiPlayer);
+        setGameStarted(false);
+      }
     }, (error) => {console.log(error)});
   }
 
@@ -250,6 +269,7 @@ const App = () => {
       console.log('successfully started new game!');
       getBoard(generateNewBoard());
       setWinningLocations(generateNewBoard());
+      setIllegalMove(-1);
       // setModalShow(false);
       setWinner(0);
       setGameStarted(true);
@@ -262,7 +282,6 @@ const App = () => {
       .then((response) => response.json())
       .then(async (data) => {
         // await randomTimeout(100,1000);
-        console.log(data);
         setCells(data.board);
         setPlayerTurn(data.mark);
         if (data.playing !== "playing") {
@@ -373,8 +392,6 @@ const App = () => {
   }
 
   const updateLastPlaced = (oldCells, newCells) => {
-    console.log(oldCells);
-    console.log(newCells);
     for (let i=0; i < newCells.length; i++){
       for (let j=0; j < newCells[0].length; j++){
         if (newCells[i][j] !== oldCells[i][j]){
@@ -390,7 +407,6 @@ const App = () => {
       <View>
         <Header>
           <Title>Connect-X with RL</Title>
-          <p>{assist.toString()}</p>
         </Header>
         <GameContainer>
           {(gameStarted || winner !== 0) ? <p style={{textAlign: 'center'}}><span style={{color: '#45B39D', fontWeight: '700'}}>{playerOneName}</span> vs <span style={{color: '#C0392B', fontWeight: '700'}}>{playerTwoName}</span></p> : <p style={{textAlign: 'center'}}>Hello, please start a new game!</p>}
@@ -404,7 +420,7 @@ const App = () => {
               {winner === 3 ?
               <WinningText>Draw!</WinningText>
               :
-              <WinningText>Winner: {winner === 1 ? <span style={{color: '#45B39D', fontWeight: '700'}}>{playerOneName}</span> : <span style={{color: '#C0392B', fontWeight: '700'}}>{playerTwoName}</span>}</WinningText>}
+              <WinningText>Winner: {winner === 1 ? <span style={{color: '#45B39D', fontWeight: '700'}}>{playerOneName}</span> : <span style={{color: '#C0392B', fontWeight: '700'}}>{playerTwoName}</span>}{illegalMove !== -1 && <span style={{color: 'yellow', fontSize: 9}}> (Opponent made illegal move!)</span>}</WinningText>}
             </div>
           }
           <GridContainer>
@@ -420,6 +436,7 @@ const App = () => {
                 // placable={cell === 0 && gameStarted}
                 isWinningPiece = {winningLocations[i][j] === 1}
                 placable={playerTurn === humanPlayer && cell === 0 && gameStarted && !assist}
+                illegalMove={illegalMove === j && i === 0}
                 handleClick={assist ? () => {return} : () => {placeCell(i,j)}}
                 />
               )))

@@ -103,5 +103,5 @@ def get_dense_agent(model_path):
     model = DQN(num_states,num_actions,hidden_units)
     model.load_weights(model_path)
     def dense_agent(observation, configuration):
-        return model.get_action(observation, 0.0)
+        return model.get_action(observation, 0.2)
     return dense_agent

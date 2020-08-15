@@ -92,6 +92,7 @@ def set_piece():
     global playing
     global observation
     (obs, reward, done, _) = env.step(action)
+    print(obs, reward, done)
     observation["board"] = obs["board"]
     observation["mark"] = obs["mark"]
     if done and reward ==1:
