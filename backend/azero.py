@@ -6,13 +6,16 @@ import numpy as np
 from collections import defaultdict
 import math
 
-def get_mcts_agent(player,model_path,num_sims=25):
+def get_mcts_agent(model_path,num_sims=25):
     model = Connect4Net()
     model.load_state_dict(torch.load(model_path))
     model.eval()
     mcts = MCTS(Game(),model)
     def agent(observation,config):
+        print("AZERO OBSERVATION")
+        print(observation)
         board = reshape4(observation["board"])
+        player = observation["mark"]
         if player == 1:
             board = transform_board(board)
         elif player == 2:
@@ -33,12 +36,13 @@ def get_mcts_agent(player,model_path,num_sims=25):
         return action
     return agent
 
-def get_greedy_agent(player,model_path):
+def get_greedy_agent(model_path):
     model = Connect4Net()
     model.load_state_dict(torch.load(model_path))
     model.eval()
     def agent(observation,config):
         board = reshape4(observation["board"])
+        player = observation["mark"]
         if player == 1:
             board = transform_board(board)
         elif player == 2:

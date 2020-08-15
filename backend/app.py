@@ -7,6 +7,8 @@ from azero import get_mcts_agent, get_greedy_agent
 from kaggle_environments.envs.connectx.connectx import negamax_agent
 from kaggle_environments.envs.connectx.connectx import random_agent
 import numpy as np
+from pprint import pprint
+import azero
 
 app = Flask(__name__)
 env = None
@@ -48,8 +50,8 @@ def create_board():
     agents_dict = {
         -1: None,
         2: get_dense_agent('weights-DQN.pth'),
-        3: get_mcts_agent(player, 'azero_60.pth'),
-        4: get_greedy_agent(player, 'azero_60.pth'),
+        3: get_mcts_agent('azero_60.pth'),
+        4: get_greedy_agent('azero_60.pth'),
         5: negamax_agent,
         6: random_agent,
     }
@@ -79,6 +81,10 @@ def get_piece():
     global playing
     global env
     global assist_agent
+    b = observation["board"]
+    print("GET PIECE")
+    print(assist_agent)
+    pprint(azero.reshape4(b))
     if playing == None:
         return 'Please call create board first',400
     action =  assist_agent(observation, env.env.configuration)
@@ -91,7 +97,13 @@ def set_piece():
     global env
     global playing
     global observation
+    b = observation["board"]
+    print("setting action")
+    pprint(azero.reshape4(b))
+    print(action)
     (obs, reward, done, _) = env.step(action)
+    b = observation["board"]
+    pprint(azero.reshape4(b))
     print(obs, reward, done)
     observation["board"] = obs["board"]
     observation["mark"] = obs["mark"]
