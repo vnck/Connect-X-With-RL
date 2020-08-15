@@ -209,6 +209,7 @@ const App = () => {
       humanPosition = 1;
       aiPosition = 2;
     } else {
+      setAssist(false);
       aiPosition = humanPosition === 0 ? 2 : 1;
       opponentAgent = players[aiPosition - 1];
       humanPosition += 1;
@@ -389,6 +390,7 @@ const App = () => {
       <View>
         <Header>
           <Title>Connect-X with RL</Title>
+          <p>{assist.toString()}</p>
         </Header>
         <GameContainer>
           {(gameStarted || winner !== 0) ? <p style={{textAlign: 'center'}}><span style={{color: '#45B39D', fontWeight: '700'}}>{playerOneName}</span> vs <span style={{color: '#C0392B', fontWeight: '700'}}>{playerTwoName}</span></p> : <p style={{textAlign: 'center'}}>Hello, please start a new game!</p>}
