@@ -21,7 +21,16 @@ def get_mcts_agent(player,model_path,num_sims=25):
         for i in range(num_sims):
             mcts.search(board)
         pi = np.array([mcts.Nsa[str(board)+str(a)]/mcts.Ns[str(board)] for a in range(7)])
-        return pi.argmax().item()
+        mask = np.array([0 for i in range(7)])
+        print(board)
+        va = get_valid_actions(board)
+        for i in va:
+            mask[i] = 1
+        pi = pi*mask
+        print(va)
+        action = pi.argmax().item()
+        print(action)
+        return action
     return agent
 
 def get_greedy_agent(player,model_path):
@@ -35,9 +44,13 @@ def get_greedy_agent(player,model_path):
         elif player == 2:
             board = transform_board(board,f=-1,s=1)
         board = torch.tensor(board).float()
+        va = get_valid_actions(board)
+        mask = np.array([0 for i in range(7)])
+        for i in va:
+            mask[i] = 1
         pi,v = model.predict2(board)
+        pi = pi*mask
         a = pi.argmax()
-        
         return a.item()
     return agent
 
@@ -283,8 +296,10 @@ class Connect4Net(nn.Module):
     def forward(self, s):
         s = s.view(-1, 1, 6, 7)    
         s = F.relu(self.bn1(self.conv1(s)))
+        # Skip connection
+        I = s
         s = F.relu(self.bn2(self.conv2(s)))
-        s = F.relu(self.bn3(self.conv3(s)))
+        s = F.relu(self.bn3(self.conv3(s))+I)
         s = F.relu(self.bn4(self.conv4(s)))
         s = s.view(-1, self.hidden_size*6*7)
         
