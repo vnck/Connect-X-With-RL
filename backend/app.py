@@ -50,8 +50,8 @@ def create_board():
     agents_dict = {
         -1: None,
         2: get_dense_agent('weights-DQN.pth'),
-        3: get_mcts_agent('azero_60.pth'),
-        4: get_greedy_agent('azero_60.pth'),
+        3: get_mcts_agent('azero_final.pth'),
+        4: get_greedy_agent('azero_final.pth'),
         5: negamax_agent,
         6: random_agent,
     }
