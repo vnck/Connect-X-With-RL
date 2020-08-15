@@ -1,4 +1,4 @@
-import React, {useState, useRef} from 'react';
+import React, {useState, useRef, useEffect} from 'react';
 import styled, {keyframes} from 'styled-components';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
@@ -142,6 +142,10 @@ const App = () => {
   const [winner, setWinner] = useState(0);
   const [winningLocations, setWinningLocations] = useState(generateNewBoard());
   const [gameStarted, setGameStarted] = useState(false);
+  const [assist, setAssist] = useState(false);
+  const playerNames = ['Human', 'Dense Agent', 'Alpha0 MCTS Agent', 'Alpha0 Greedy Agent', 'Negamax Agent', 'Random Agent']
+  const [playerOneName, setPlayerOneName] = useState('');
+  const [playerTwoName, setPlayerTwoName] = useState('');
 
   const applyGravity = (cells, x, y) => {
     for (let i = cells.length - 1; i >= x; i--){
@@ -151,6 +155,29 @@ const App = () => {
       }
     }
     return cells;
+  }
+
+  const assistMove = (board) => {
+    let promise = new Promise((resolve, reject) => {
+      fetch('http://localhost:5000/getpiece')
+      .then((response) => response.json())
+      .then(async (data) => {
+        resolve(data.action);
+      })
+      .catch((error) => {
+        reject(error);
+      })
+    });
+    promise.then((action) => {
+      console.log('got action');
+      let newCells = Array.from(board);
+      newCells[0][action] = humanPlayer;
+      applyGravity(newCells, 0, action);
+      setCells(newCells);
+      updateLastPlaced(board,newCells);
+      setPlayerTurn(aiPlayer);
+      setPiece(newCells,action);
+    }, (error) => {console.log(error)});
   }
 
   const placeCell = (i,j) => {
@@ -168,21 +195,45 @@ const App = () => {
     return new Promise((resolve) => setTimeout(resolve, delay));
   }
   
-  const chooseFirstMover = async (i) => {
+  const chooseFirstMover = async (players) => {
+    players = players.map((i)=>parseInt(i));
+    let humanPosition = players.findIndex((i)=> i === 1);
+    console.log(players);
+    let aiPosition = -1;
+    let assistAgent = -1;
+    let opponentAgent = -1;
+    if (humanPosition === -1){
+      setAssist(true);
+      assistAgent = players[0];
+      opponentAgent = players[1];
+      humanPosition = 1;
+      aiPosition = 2;
+    } else {
+      aiPosition = humanPosition === 0 ? 2 : 1;
+      opponentAgent = players[aiPosition - 1];
+      humanPosition += 1;
+    };
     setCells(generateNewBoard());
     setLastPlaced([-1,-1]);
+    if (humanPosition === 1){
+      setPlayerOneName(playerNames[assistAgent === -1 ? 0 : assistAgent - 1]);
+      setPlayerTwoName(playerNames[opponentAgent - 1]);
+    } else {
+      setPlayerTwoName(playerNames[assistAgent === -1 ? 0 : assistAgent - 1]);
+      setPlayerOneName(playerNames[opponentAgent - 1]);
+    }
     let promise1 = new Promise((resolve) => {
-      setHumanPlayer(i);
-      setAIPlayer(i === 1 ? 2 : 1);
+      setHumanPlayer(humanPosition);
+      setAIPlayer(humanPosition === 1 ? 2 : 1);
       setModalShow(false);
       resolve();
-    })
+    });
     let promise = new Promise((resolve, reject) => {
       const requestOptions ={
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(
-          {'agent_name': 'negamax','player': i}
+          {'opponent_agent': opponentAgent,'player': humanPosition, 'assist_agent': assistAgent}
         )
       };
       fetch('http://localhost:5000/createboard', requestOptions)
@@ -208,7 +259,7 @@ const App = () => {
     let promise = new Promise((resolve, reject) => {
       fetch('http://localhost:5000/getboard')
       .then((response) => response.json())
-      .then((data) => {
+      .then(async (data) => {
         // await randomTimeout(100,1000);
         console.log(data);
         setCells(data.board);
@@ -223,14 +274,18 @@ const App = () => {
         } else {
           updateLastPlaced(board,data.board);
         }
-        resolve();
+        resolve(data);
       })
       .catch((error) => {
         reject(error);
       })
     });
-    promise.then(() => {
+    promise.then((data) => {
       console.log('got board');
+      console.log(data);
+      if (data.playing === 'playing' && data.assist){
+        assistMove(data.board);
+      }
     }, (error) => {console.log(error)});
   }
 
@@ -336,17 +391,18 @@ const App = () => {
           <Title>Connect-X with RL</Title>
         </Header>
         <GameContainer>
+          {(gameStarted || winner !== 0) ? <p style={{textAlign: 'center'}}><span style={{color: '#45B39D', fontWeight: '700'}}>{playerOneName}</span> vs <span style={{color: '#C0392B', fontWeight: '700'}}>{playerTwoName}</span></p> : <p style={{textAlign: 'center'}}>Hello, please start a new game!</p>}
           {gameStarted ? 
-            <p>Turn: {playerTurn === 1 ? <span style={{color: '#45B39D', fontWeight: '700'}}>{humanPlayer === 1 ? 'Human' : 'AI'}</span> : <span style={{color: '#C0392B', fontWeight: '700'}}>{humanPlayer === 2 ? 'Human' : 'AI'}</span>}</p>
+            <p>Turn: {playerTurn === 1 ? <span style={{color: '#45B39D', fontWeight: '700'}}>{playerOneName}</span> : <span style={{color: '#C0392B', fontWeight: '700'}}>{playerTwoName}</span>}</p>
             :
             winner === 0 ? 
-            <p>Hello, please start a new game!</p>
+            <p style={{opacity: 0}}>Turn: </p>
             :
             <div>
               {winner === 3 ?
               <WinningText>Draw!</WinningText>
               :
-              <WinningText>Winner: {winner === 1 ? <span style={{color: '#45B39D', fontWeight: '700'}}>{humanPlayer === 1 ? 'Human' : 'AI'}</span> : <span style={{color: '#C0392B', fontWeight: '700'}}>{humanPlayer === 2 ? 'Human' : 'AI'}</span>}</WinningText>}
+              <WinningText>Winner: {winner === 1 ? <span style={{color: '#45B39D', fontWeight: '700'}}>{playerOneName}</span> : <span style={{color: '#C0392B', fontWeight: '700'}}>{playerTwoName}</span>}</WinningText>}
             </div>
           }
           <GridContainer>
@@ -361,8 +417,8 @@ const App = () => {
                 lastPlaced={lastPlaced[0] === i && lastPlaced[1] === j}
                 // placable={cell === 0 && gameStarted}
                 isWinningPiece = {winningLocations[i][j] === 1}
-                placable={playerTurn === humanPlayer && cell === 0 && gameStarted}
-                handleClick={() => {placeCell(i,j)}}
+                placable={playerTurn === humanPlayer && cell === 0 && gameStarted && !assist}
+                handleClick={assist ? () => {return} : () => {placeCell(i,j)}}
                 />
               )))
             }

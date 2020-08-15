@@ -2,7 +2,10 @@ from flask import Flask,request
 from flask_cors import CORS
 import gym
 from kaggle_environments import make
-from dqn_dense_model import dense_agent 
+from dqn_dense_model import get_dense_agent
+from azero import get_mcts_agent, get_greedy_agent
+from kaggle_environments.envs.connectx.connectx import negamax_agent
+from kaggle_environments.envs.connectx.connectx import random_agent
 import numpy as np
 
 app = Flask(__name__)
@@ -11,12 +14,12 @@ observation = None
 playing = None
 
 class ConnectX(gym.Env):
-    def __init__(self,my_agent,player):
+    def __init__(self,opponent_agent,player):
         self.env = make('connectx', debug=True)
         if player == 1:
-            self.pair = [None,my_agent]
+            self.pair = [None,opponent_agent]
         elif player == 2:
-            self.pair = [my_agent,None]
+            self.pair = [opponent_agent,None]
         self.trainer = self.env.train(self.pair)
 
         config = self.env.configuration
@@ -35,14 +38,24 @@ class ConnectX(gym.Env):
 
 @app.route("/createboard",methods=["POST"])
 def create_board():
-    json_post = request.get_json()
-    # agent_name = json_post["agent_name"]
-    player = json_post["player"]
     global env
     global observation
     global playing
-    # env = ConnectX(agent_name,player)
-    env = ConnectX(dense_agent, player)
+    global assist_agent
+    json_post = request.get_json()
+    # agent_name = json_post["agent_name"]
+    player = json_post["player"]
+    agents_dict = {
+        -1: None,
+        2: get_dense_agent('weights-DQN.pth'),
+        3: get_mcts_agent(player, 'net.pth'),
+        4: get_greedy_agent(player, 'net.pth'),
+        5: negamax_agent,
+        6: random_agent,
+    }
+    opponent_agent = agents_dict[json_post["opponent_agent"]]
+    assist_agent = agents_dict[json_post["assist_agent"]]
+    env = ConnectX(opponent_agent, player)
     observation = env.reset()
     playing = "playing"
     return 'ok',200
@@ -58,7 +71,18 @@ def get_board():
     valid_actions = [c for c in range(0,7) if board[c]==0]
     board = np.array(board).reshape(6,7).tolist()
     mark = observation["mark"]
-    return {"board":board,"mark":mark,"playing":playing,"valid_actions":valid_actions}
+    return {"board":board,"mark":mark,"playing":playing,"valid_actions":valid_actions, "assist": assist_agent is not None}
+
+@app.route("/getpiece")
+def get_piece():
+    global observation
+    global playing
+    global env
+    global assist_agent
+    if playing == None:
+        return 'Please call create board first',400
+    action =  assist_agent(observation, env.env.configuration)
+    return {"action": action}
 
 @app.route("/setpiece",methods=["POST"])
 def set_piece():

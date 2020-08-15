@@ -96,11 +96,12 @@ class DQN():
             board[board == 2] = 1
         return board
 
-num_states = 42
-num_actions = 7
-hidden_units = [128, 128, 64, 64]
-model = DQN(num_states,num_actions,hidden_units)
-model.load_weights('weights-DQN.pth')
-
-def dense_agent(observation, configuration):
-  return model.get_action(observation, 0.0)
+def get_dense_agent(model_path):
+    num_states = 42
+    num_actions = 7
+    hidden_units = [128, 128, 128, 128]
+    model = DQN(num_states,num_actions,hidden_units)
+    model.load_weights(model_path)
+    def dense_agent(observation, configuration):
+        return model.get_action(observation, 0.0)
+    return dense_agent
