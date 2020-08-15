@@ -171,7 +171,7 @@ const App = () => {
     let promise = new Promise((resolve, reject) => {
       fetch('http://localhost:5000/getpiece')
       .then((response) => response.json())
-      .then(async (data) => {
+      .then((data) => {
         resolve(data.action);
       })
       .catch((error) => {
@@ -180,12 +180,12 @@ const App = () => {
     });
     promise.then((action) => {
       console.log('got action');
-      let newCells = Array.from(board);
+      let newCells = JSON.parse(JSON.stringify(board));
       if (newCells[0][action] === 0){
         newCells[0][action] = humanPlayer;
         applyGravity(newCells, 0, action);
         setCells(newCells);
-        updateLastPlaced(cells,newCells);
+        updateLastPlaced(humanPlayer, board,newCells);
         setPlayerTurn(aiPlayer);
         setPiece(newCells,action);
       } else {
@@ -200,7 +200,7 @@ const App = () => {
   }
 
   const placeCell = (i,j) => {
-    console.log(`place cell at row: ${i}, col: ${j}`);
+    console.log(`Human placed cell at row: ${i}, col: ${j}`);
     let newCells = Array.from(cells);
     newCells[i][j] = humanPlayer;
     applyGravity(newCells, i, j);
@@ -292,7 +292,7 @@ const App = () => {
             checkWinCondition(data.board);
           }
         } else {
-          updateLastPlaced(board,data.board);
+          updateLastPlaced(aiPlayer,board,data.board);
         }
         resolve(data);
       })
@@ -391,12 +391,12 @@ const App = () => {
     }
   }
 
-  const updateLastPlaced = (oldCells, newCells) => {
+  const updateLastPlaced = (player, oldCells, newCells) => {
     for (let i=0; i < newCells.length; i++){
       for (let j=0; j < newCells[0].length; j++){
         if (newCells[i][j] !== oldCells[i][j]){
           setLastPlaced([i,j])
-          console.log(`AI placed at row: ${i}, col: ${j}`)
+          console.log(`Player ${player} placed at row: ${i}, col: ${j}`)
         }
       }
     }
