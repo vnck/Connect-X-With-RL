@@ -7,6 +7,7 @@ Agents Available:
 - Human
 - Alpha Zero (Monte Carlo Tree Search)
 - Alpha Zero (Greedy)
+- Dense Network
 - Negamax
 - Random
 
