@@ -9,6 +9,7 @@ from kaggle_environments.envs.connectx.connectx import random_agent
 import numpy as np
 from pprint import pprint
 import azero
+from minimax import get_minimax_agent
 
 app = Flask(__name__)
 env = None
@@ -52,8 +53,9 @@ def create_board():
         2: get_dense_agent('weights-DQN.pth'),
         3: get_mcts_agent('azero_final.pth'),
         4: get_greedy_agent('azero_final.pth'),
-        5: negamax_agent,
-        6: random_agent,
+        5: get_minimax_agent(),
+        6: negamax_agent,
+        7: random_agent,
     }
     opponent_agent = agents_dict[json_post["opponent_agent"]]
     assist_agent = agents_dict[json_post["assist_agent"]]

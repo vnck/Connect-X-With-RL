@@ -152,7 +152,7 @@ const App = () => {
   const [winningLocations, setWinningLocations] = useState(generateNewBoard());
   const [gameStarted, setGameStarted] = useState(false);
   const [assist, setAssist] = useState(false);
-  const playerNames = ['Human', 'Dense Agent', 'Alpha0 MCTS Agent', 'Alpha0 Greedy Agent', 'Negamax Agent', 'Random Agent']
+  const playerNames = ['Human', 'Dense Agent', 'Alpha0 MCTS Agent', 'Alpha0 Greedy Agent','Minimax Agent','Negamax Agent', 'Random Agent']
   const [playerOneName, setPlayerOneName] = useState('');
   const [playerTwoName, setPlayerTwoName] = useState('');
   const [illegalMove, setIllegalMove] = useState(-1);

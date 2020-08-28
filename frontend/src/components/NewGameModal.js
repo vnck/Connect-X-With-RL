@@ -73,8 +73,9 @@ const NewGameModal = (props) => {
                   <option value={2}>Dense Agent</option>
                   <option value={3}>Alpha0 MCTS Agent</option>
                   <option value={4}>Alpha0 Greedy Agent</option>
-                  <option value={5}>Negamax Agent</option>
-                  <option value={6}>Random Agent</option>
+                  <option value={5}>Minimax Agent</option>
+                  <option value={6}>Negamax Agent</option>
+                  <option value={7}>Random Agent</option>
                 </Form.Control>
               </Col>
               <Col>
@@ -84,8 +85,9 @@ const NewGameModal = (props) => {
                   <option value={2}>Dense Agent</option>
                   <option value={3}>Alpha0 MCTS Agent</option>
                   <option value={4}>Alpha0 Greedy Agent</option>
-                  <option value={5}>Negamax Agent</option>
-                  <option value={6}>Random Agent</option>
+                  <option value={5}>Minimax Agent</option>
+                  <option value={6}>Negamax Agent</option>
+                  <option value={7}>Random Agent</option>
                 </Form.Control>
               </Col>
             </Form.Row>
