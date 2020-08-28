@@ -222,6 +222,18 @@ def my_agent(observation,config):
     action,value = alphabeta(board,4,-9999999999999,9999999999999,True,opp_player,player)
     return action
 
+#######################################################
+# call alpha beta once so that numba compiles
+arr = np.array([[0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0],
+                [0,0,2,2,0,0,0],
+                [0,0,1,2,1,0,0],
+                [0,0,1,1,2,0,0],
+                [0,0,1,2,1,0,0]])
+
+alphabeta(arr,2,-9999999999999,9999999999999,True,2,1)
+#######################################################
+
 def get_minimax_agent(depth=7):
     def minimax_agent(observation,config):
         board = np.array(observation["board"]).reshape(6,7)
